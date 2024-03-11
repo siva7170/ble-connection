@@ -1,5 +1,5 @@
 {
-  "name": "ble-connection",
+  "name": "@siva7170/ble-connection",
   "version": "1.0.0",
   "description": "Node.js Bluetooth SPP communication for Windows",
   "keywords": [
@@ -10,10 +10,12 @@
     "windows"
   ],
   "homepage": "https://github.com/siva7170/ble-connection",
-  "bugs": "https://github.com/siva7170/ble-connection/issues",
+  "bugs": {
+    "url": "https://github.com/siva7170/ble-connection/issues"
+  },
   "repository": {
-      "type": "git",
-      "url": "https://github.com/siva7170/ble-connection"
+    "type": "git",
+    "url": "git+https://github.com/siva7170/ble-connection.git"
   },
   "main": "index.js",
   "os": [
@@ -29,5 +31,6 @@
     "bindings": "^1.5.0",
     "nan": "^2.18.0",
     "node-addon-api": "^7.1.0"
-  }
+  },
+  "devDependencies": {}
 }
