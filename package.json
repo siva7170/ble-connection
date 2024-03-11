@@ -1,7 +1,20 @@
 {
   "name": "ble-connection",
   "version": "1.0.0",
-  "description": "",
+  "description": "Node.js Bluetooth SPP communication for Windows",
+  "keywords": [
+    "bluetooth",
+    "serial port profile",
+    "bluetooth spp",
+    "rfcomm",
+    "windows"
+  ],
+  "homepage": "https://github.com/siva7170/ble-connection",
+  "bugs": "https://github.com/siva7170/ble-connection/issues",
+  "repository": {
+      "type": "git",
+      "url": "https://github.com/siva7170/ble-connection"
+  },
   "main": "index.js",
   "os": [
     "win32"
@@ -10,7 +23,7 @@
     "install": "node-gyp configure build",
     "install-debug": "node-gyp configure build --debug"
   },
-  "author": "siva7170",
+  "author": "Siva V <siva7170430@gmail.com>",
   "license": "ISC",
   "dependencies": {
     "bindings": "^1.5.0",
