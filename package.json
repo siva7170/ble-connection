@@ -1,0 +1,20 @@
+{
+  "name": "ble-connection",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "os": [
+    "win32"
+  ],
+  "scripts": {
+    "install": "node-gyp configure build",
+    "install-debug": "node-gyp configure build --debug"
+  },
+  "author": "siva7170",
+  "license": "ISC",
+  "dependencies": {
+    "bindings": "^1.5.0",
+    "nan": "^2.18.0",
+    "node-addon-api": "^7.1.0"
+  }
+}

@@ -1,0 +1,7 @@
+build
+._*
+node_modules
+npm-debug.log
+cpp_source/BLE/.vs
+cpp_source/BLE/x64
+cpp_source/BLE/x86

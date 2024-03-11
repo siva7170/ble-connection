@@ -1,0 +1,9 @@
+/node_modules/
+/.gitignore
+/.npmignore
+/npm-debug.log
+/build/
+/._*
+/cpp_source/BLE/.vs
+/cpp_source/BLE/x64
+/cpp_source/BLE/x86
