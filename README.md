@@ -105,7 +105,7 @@ bleConnInstance.OnReceiveData((data)=>{
 });
 ```
 
-## Full Exaample
+## Full Example
   
 Please find full example of implementation
 
