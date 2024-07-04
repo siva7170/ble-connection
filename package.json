@@ -1,6 +1,6 @@
 {
   "name": "@siva7170/ble-connection",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "description": "Node.js Bluetooth SPP communication for Windows",
   "keywords": [
     "bluetooth",
