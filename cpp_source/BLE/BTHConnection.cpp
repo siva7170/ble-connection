@@ -20,6 +20,8 @@ int timeOutForReconnect=5000;
 int noofAttempt=0;
 const char* btaddr;
 const char* btguid;
+std::string connectionStatus="DISCONNECTED";
+bool isDisconnectedRequest=false;
 
 bool BTHConnection::InitializeBT() {
     WSADATA data;
@@ -96,6 +98,7 @@ bool BTHConnection::Connect() {
 
         return false;
     }
+    connectionStatus="CONNECTED";
     lastError = 0;
     return true;
 }
@@ -342,35 +345,47 @@ bool BTHConnection::ReceiveData() {
 
 bool BTHConnection::Reconnect() {
     bool isConnected = IsConnected();
+    if(connectionStatus=="CONNECTED" || connectionStatus=="RECONNECTING"){
+        connectionStatus="RECONNECTING";
+        int attempt = 1;
 
-    int attempt = 1;
-
-    while (true) {
-        if (noofAttempt!=0 && attempt > noofAttempt) {
-            lastError = 4;
-            return false;
-            break;
-        }
-        if (!isConnected) {
-            CloseSocket();
-            FinalizeBT();
-
-            if (Connect()) {
-                printf("Reconnected \n");
-                return true;
+        while (true) {
+            if(isDisconnectedRequest){
+                CloseSocket();
+                FinalizeBT();
+                connectionStatus="DISCONNECTED";
+                lastError = 4;
+                return false;
                 break;
             }
-            else {
-                printf("Attempt %d\n",attempt);
-                attempt++;
-                Sleep(timeOutForReconnect);
+            if (noofAttempt!=0 && attempt > noofAttempt) {
+                lastError = 4;
+                return false;
+                break;
+            }
+            if (!isConnected) {
+                CloseSocket();
+                FinalizeBT();
+
+                if (Connect()) {
+                    connectionStatus="RECONNECTED";
+                    printf("Reconnected \n");
+                    return true;
+                    break;
+                }
+                else {
+                    printf("Attempt %d\n",attempt);
+                    attempt++;
+                    Sleep(timeOutForReconnect);
+                }
+            }
+            else
+            {
+                break;
             }
         }
-        else
-        {
-            break;
-        }
     }
+    
 
     return isConnected;
 }
@@ -381,6 +396,14 @@ bool BTHConnection::ReceiveDataFromServer() {
     int attempt = 1;
 
     while (true) {
+        if(isDisconnectedRequest){
+                lastError = 4;
+                CloseSocket();
+                FinalizeBT();
+                connectionStatus="DISCONNECTED";
+                return false;
+                break;
+        }
         if (attempt > 5) {
             lastError = 4;
             return false;
@@ -448,8 +471,10 @@ void BTHConnection::FinalizeBT() {
 }
 
 bool BTHConnection::Disconnect() {
-    CloseSocket(); 
-    WSACleanup();
+    //connectionStatus="DISCONNECTED";
+    // CloseSocket(); 
+    // WSACleanup();
+    isDisconnectedRequest=true;
     lastError = 0;
     return true;
 }

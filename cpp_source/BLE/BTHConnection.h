@@ -21,6 +21,8 @@ public:
     SOCKADDR_BTH sockAddr;
     const char* btaddr;
     const char* btguid;
+    std::string connectionStatus;
+    bool isDisconnectedRequest;
 
     bool InitializeBT();
     bool CreateSocket();
