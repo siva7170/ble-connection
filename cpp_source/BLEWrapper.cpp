@@ -4,6 +4,7 @@
 
 using namespace Napi;
 Napi::FunctionReference BLEWrapper::constructor;
+Napi::FunctionReference BLEWrapper::constructorServer;
 
 Napi::Object BLEWrapper::Init(Napi::Env env, Napi::Object exports)
 {
@@ -26,9 +27,23 @@ Napi::Object BLEWrapper::Init(Napi::Env env, Napi::Object exports)
         InstanceMethod("GetStatus", &BLEWrapper::getStatus)
     });
 
+    Napi::Function func2 = DefineClass(env, "BTHServer", {
+        //The names of functions that nodejs calls and what will be invoked on calls.
+        InstanceMethod("Initiate", &BLEWrapper::initBtServer),
+        InstanceMethod("StartServer", &BLEWrapper::StartServer),
+        InstanceMethod("StopServer", &BLEWrapper::StopServer),
+        InstanceMethod("SendData", &BLEWrapper::SendDataFromServer),
+        InstanceMethod("OnData", &BLEWrapper::OnData),
+        InstanceMethod("OnClientConnected", &BLEWrapper::SetClientConnectedCallback),
+        InstanceMethod("OnClientDisconnected", &BLEWrapper::SetClientDisconnectedCallback),
+    });
+
     constructor = Napi::Persistent(func);
     constructor.SuppressDestruct();
+    constructorServer = Napi::Persistent(func2);
+    constructorServer.SuppressDestruct();
     exports.Set("BLEConnection", func); 
+    exports.Set("BLEServer", func2); 
    
     return exports;
 }
@@ -36,6 +51,108 @@ Napi::Object BLEWrapper::Init(Napi::Env env, Napi::Object exports)
 BLEWrapper::BLEWrapper(const Napi::CallbackInfo &info) : Napi::ObjectWrap<BLEWrapper>(info)
 {
     this->bthConnection = new BTHConnection(); 
+    this->bthServer = new BTHServer(); 
+
+    
+}
+
+void BLEWrapper::initBtServer(const Napi::CallbackInfo &info){
+    bool iBtServer=this->bthServer->InitBTHServer();
+    if(iBtServer){
+            // Setup native -> JS bridge for events
+            this->bthServer->SetDataCallback([this](const std::string& data) {
+
+                std::lock_guard<std::mutex> lock(mutex_);
+                if (!tsfcbDataCallback_) {
+                    //printf("TSFN is null!\n");
+                    return;
+                }
+                std::string* dataCopy = new std::string(data);
+                auto call_status = tsfcbDataCallback_.BlockingCall(
+                    dataCopy,
+                    [](Napi::Env env, Napi::Function jsCallback, std::string* receivedData) {
+                        try {
+                            // Use the actual received data
+                            jsCallback.Call({Napi::String::New(env, *receivedData)});
+                        } catch (...) {
+                            // Handle JS exceptions
+                        }
+                        delete receivedData; // Clean up
+                    }
+                );
+            
+                if (call_status != napi_ok) {
+                    delete dataCopy; // Clean up if call failed
+                    // Handle error (e.g., log it)
+                }
+
+                // if (!onDataCallback_.IsEmpty()) {
+                //     Napi::Env env = onDataCallback_.Env();
+                //     Napi::HandleScope scope(env);
+
+                //     // Ensure thread-safe callback execution
+                //     std::lock_guard<std::mutex> lock(mutex_);
+                //     onDataCallback_.Call({
+                //         Napi::String::New(env, data)
+                //     });
+                // }
+            });
+            //printf("Setter thread (1): %ld\n", std::this_thread::get_id());
+            this->bthServer->SetClientConnectedCallback([this]() {
+                //printf("Callback invoked, TSFN state: %p\n", &tsfcbClientConnectedCallback_);
+                //printf("Callback thread: %ld\n", std::this_thread::get_id());
+                std::lock_guard<std::mutex> lock(mutex_);
+                if (!tsfcbClientConnectedCallback_) {
+                    //printf("TSFN is null!\n");
+                    return;
+                }
+                auto call_status = tsfcbClientConnectedCallback_.BlockingCall([](Napi::Env env, Napi::Function jsCallback) {
+                    jsCallback.Call({});
+                });
+    
+                // Check if the call to JavaScript succeeded
+                // if (call_status != napi_ok) {
+                // // Handle error
+                // }
+                // if (!clientConnectedCallback_.IsEmpty()) {
+                //     printf("Called...\n");
+                //     Napi::Env env = clientConnectedCallback_.Env();
+                //     Napi::HandleScope scope(env);
+
+                //     Napi::Function successCallback11 = clientConnectedCallback_.Value();
+                //     std::lock_guard<std::mutex> lock(mutex_);
+                //     successCallback11.Call({});
+                //     // Ensure thread-safe callback execution
+                   
+                //     //clientConnectedCallback_.Call({});
+                // }
+                // else{
+                //     printf("Not ..Called...\n");
+                // }
+            });
+
+            this->bthServer->SetClientDisconnectedCallback([this]() {
+                // if (!clientDisconnectedCallback_.IsEmpty()) {
+                //     Napi::Env env = clientDisconnectedCallback_.Env();
+                //     Napi::HandleScope scope(env);
+
+                //     std::lock_guard<std::mutex> lock(mutex_);
+                //     clientDisconnectedCallback_.Call({});
+                // }
+
+                std::lock_guard<std::mutex> lock(mutex_);
+                if (!tsfcbClientDisconnectedCallback_) {
+                    //printf("TSFN is null!\n");
+                    return;
+                }
+                auto call_status = tsfcbClientDisconnectedCallback_.BlockingCall([](Napi::Env env, Napi::Function jsCallback) {
+                    jsCallback.Call({});
+                });
+            });
+    }
+    else{
+
+    }
 }
 
 void BLEWrapper::init(const Napi::CallbackInfo &info)
@@ -573,4 +690,108 @@ void BLEWrapper::UpdateStatus(const std::string& status) {
     }
 
     
+}
+
+Napi::Value BLEWrapper::StartServer(const Napi::CallbackInfo& info){
+    Napi::Env env = info.Env();
+        
+    if (info.Length() < 1 || !info[0].IsString()) {
+        Napi::TypeError::New(env, "Service name expected").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+    
+    std::string serviceName = info[0].As<Napi::String>().Utf8Value();
+    GUID serviceUuid = SerialPortServiceClass_UUID;
+    
+    bool success = this->bthServer->Start(serviceName, serviceUuid);
+    if (!success) {
+        Napi::Error::New(env, "Failed to start Bluetooth server").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+    return Napi::Boolean::New(env, true);
+}
+
+Napi::Value BLEWrapper::StopServer(const Napi::CallbackInfo& info) {
+    this->bthServer->Stop();
+    return info.Env().Undefined();
+}
+
+Napi::Value BLEWrapper::SendDataFromServer(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    
+    if (info.Length() < 1 || !info[0].IsString()) {
+        Napi::TypeError::New(env, "String data expected").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+    
+    std::string data = info[0].As<Napi::String>().Utf8Value();
+    bool success = this->bthServer->SendData(data);
+    
+    return Napi::Boolean::New(env, success);
+}
+
+Napi::Value BLEWrapper::OnData(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    
+    if (info.Length() < 1 || !info[0].IsFunction()) {
+        Napi::TypeError::New(env, "Function expected").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+    
+    // std::lock_guard<std::mutex> lock(mutex_);
+    // onDataCallback_ = Napi::Persistent(info[0].As<Napi::Function>());
+    // return env.Undefined();
+    if (tsfcbDataCallback_) {
+        tsfcbDataCallback_.Release();
+    }
+
+    Napi::Function napiFunction = info[0].As<Napi::Function>();
+    tsfcbDataCallback_ = Napi::ThreadSafeFunction::New(env, napiFunction, "OnData", 0, 1,[](Napi::Env){});
+    return env.Undefined();
+}
+
+Napi::Value BLEWrapper::SetClientConnectedCallback(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    
+    if (info.Length() < 1 || !info[0].IsFunction()) {
+        Napi::TypeError::New(env, "Function expected").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+    
+    std::lock_guard<std::mutex> lock(mutex_);
+    // Release previous callback if exists
+    if (tsfcbClientConnectedCallback_) {
+        tsfcbClientConnectedCallback_.Release();
+    }
+
+    //clientConnectedCallback_ = Napi::Persistent(info[0].As<Napi::Function>());
+
+    Napi::Function napiFunction = info[0].As<Napi::Function>();
+    tsfcbClientConnectedCallback_ = Napi::ThreadSafeFunction::New(env, napiFunction, "SetClientConnectedCallback", 0, 1,[](Napi::Env){});
+    //printf("TSFN initialized: %p\n", &tsfcbClientConnectedCallback_);  // Debug print
+    //printf("Setter thread (2): %ld\n", std::this_thread::get_id());
+    return env.Undefined();
+}
+
+Napi::Value BLEWrapper::SetClientDisconnectedCallback(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    
+    if (info.Length() < 1 || !info[0].IsFunction()) {
+        Napi::TypeError::New(env, "Function expected").ThrowAsJavaScriptException();
+        return env.Null();
+    }
+    
+    // std::lock_guard<std::mutex> lock(mutex_);
+    // clientDisconnectedCallback_ = Napi::Persistent(info[0].As<Napi::Function>());
+    // return env.Undefined();
+    // Release previous callback if exists
+    if (tsfcbClientDisconnectedCallback_) {
+        tsfcbClientDisconnectedCallback_.Release();
+    }
+
+    Napi::Function napiFunction = info[0].As<Napi::Function>();
+    tsfcbClientDisconnectedCallback_ = Napi::ThreadSafeFunction::New(env, napiFunction, "SetClientDisconnectedCallback", 0, 1,[](Napi::Env){});
+    //printf("TSFN initialized: %p\n", &tsfcbClientConnectedCallback_);  // Debug print
+    //printf("Setter thread (2): %ld\n", std::this_thread::get_id());
+    return env.Undefined();
 }

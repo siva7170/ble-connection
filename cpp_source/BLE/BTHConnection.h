@@ -4,12 +4,12 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
+
 #pragma comment(lib,"WS2_32")
 #pragma comment (lib, "User32.lib")
 #pragma comment (lib, "legacy_stdio_definitions.lib")
 
 #define DEFAULT_BUFLEN 512
-
 
 class BTHConnection {
 public:

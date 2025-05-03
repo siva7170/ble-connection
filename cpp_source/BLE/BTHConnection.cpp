@@ -55,12 +55,14 @@ void BTHConnection::SetBthInfo(const char* straddr, const char* guid, int timeou
     memset(&sockAddr, 0, sizeof(sockAddr));
     sockAddr.addressFamily = AF_BTH;
     char* btguidCopy = new char[strlen(btguid) + 1];
-    strcpy(btguidCopy, btguid);
+    strcpy(btguidCopy, btguid); // OLD
+    //strcpy_s(btguidCopy, sizeof(btguidCopy), btguid);
     str2guid(btguidCopy, &sockAddr.serviceClassId);
     //sockAddr.serviceClassId= string2guid(guid);
     sockAddr.port = BT_PORT_ANY;
     char* btaddrCopy = new char[strlen(btaddr) + 1];
-    strcpy(btaddrCopy, btaddr);
+    strcpy(btaddrCopy, btaddr); // OLD
+    // strcpy_s(btaddrCopy, sizeof(btaddrCopy), btaddr);
     str2ba(btaddrCopy, &sockAddr.btAddr);
     //sockAddr.btAddr = 0x9078B2CDCCE0;
     timeOutForReconnect = timeoutForReconnect;

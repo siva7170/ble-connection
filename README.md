@@ -1,6 +1,6 @@
-# BLE Connection
+# Bluetooth SPP
 
-This is a node addon api package used for connecting other bluetooth through Bluethooth SPP. IMPORTANT! It supports for Windows platform. For now, we can only connect to other bluetooth spp. It means, this package does not act as server.
+This is a node addon api package used for connecting other bluetooth through Bluethooth SPP. IMPORTANT! It supports for Windows platform. Now, we can use it as server and client.
 
 ## Getting Started
 
@@ -24,7 +24,7 @@ const bleConnection = require('@siva7170/ble-connection');
 const bleConnInstance = new bleConnection.BLEConnection();
 ```
 
-## Methods
+## Client Methods
 
 ### Initiate(successCallback,failureCallback)
 
@@ -152,7 +152,7 @@ try{
 # Version 2
 
 
-## Usage
+## Client Usage
 
 Below code is sample for how to use it. Please see methods and its functionalities below sections.
 
@@ -322,11 +322,111 @@ try{
 }
 ```
 
+
+## Server Usage
+
+Below code is sample for how to use it. Please see methods and its functionalities below sections.
+
+```javascript
+const bleConnection = require('@siva7170/ble-connection');
+
+const bleServerInstance = new bleConnection.BLEServer();
+```
+
+## Methods
+
+### Initiate()
+
+It sets necessary things to BLE Server before it initialize. 
+
+```javascript
+bleServerInstance.Initiate();
+```
+
+### StartServer(serviceName)
+
+- **serviceName**:
+  - Type: `String`
+
+This method will start the Bluetooth SPP server.
+
+```javascript
+bleServerInstance.StartServer(serviceName);
+```
+
+### StopServer()
+
+This method will stop the Bluetooth SPP server.
+
+```javascript
+bleServerInstance.StopServer();
+```
+
+### OnData(dataCallback) 
+
+- **dataCallback**:
+  - Type: `Function`
+  
+It will call the data callback when new data received from client.
+
+```javascript
+bleServerInstance.OnData((data)=>{
+    console.log("Data>",data);
+});
+```
+
+
+### SendData(data) 
+
+- **data**:
+  - Type: `String`
+  
+It will send data to client.
+
+```javascript
+bleServerInstance.SendData("Hello!");
+```
+
+### OnClientConnected(callback) (optional)
+
+- **callback**:
+  - Type: `Function`
+
+This method will be triggered when connection made to Bluetooth Client.
+
+```javascript
+    bleServerInstance.OnClientConnected(()=>{
+        console.log("Connected!");
+    });
+```
+
+### OnClientDisconnected(callback) (optional)
+
+- **callback**:
+  - Type: `Function`
+
+This method will be triggered when connection lost with Bluetooth Client.
+
+```javascript
+    bleServerInstance.OnClientDisconnected(()=>{
+        console.log("Disconnected!");
+    });
+```
+
+## Full Example
+  
+Please find full example of implementation
+
+```javascript
+// Please refer  "./test/server.js"
+```
+
 ## TODO
 
 - [x] Bluetooth SPP Client (Windows)
 - [ ] Bluetooth SPP Client (Other platform)
-- [ ] Bluetooth SPP Server (for all platform)
+- [x] Bluetooth SPP Server (Windows)
+- [ ] Bluetooth SPP Server (Other platform)
 - [ ] Modify all code more efficient
 
 ## Contribution

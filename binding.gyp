@@ -12,12 +12,13 @@
         "cpp_source/main.cpp",
         "cpp_source/BLEWrapper.cpp",
         "cpp_source/BLE/BTHConnection.cpp",
+        "cpp_source/BLE/BTHServer.cpp",
       ],
       "include_dirs": [ #If you use any library in cpp project, write here header files path.
         "<!@(node -p \"require('node-addon-api').include\")",
       ],
       "libraries": [
-        '-llegacy_stdio_definitions.lib', '-luser32.lib', '-lWs2_32.lib'
+        '-llegacy_stdio_definitions.lib', '-lBthprops.lib', '-luser32.lib', '-lWs2_32.lib'
       ],
       "configurations": {#Compilation settings, default RuntimeTypeInfo is closed.
         "Release": {
